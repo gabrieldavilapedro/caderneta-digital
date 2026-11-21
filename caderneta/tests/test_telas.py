@@ -1,7 +1,7 @@
 """Testes das telas (views): fluxo completo como o comerciante usaria."""
 from decimal import Decimal
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
@@ -11,67 +11,51 @@ from caderneta.models import Cliente, Movimentacao
 VENDA = Movimentacao.Tipo.VENDA
 
 
-class TelaLogadaTestCase(TestCase):
-    def setUp(self):
-        self.usuario = get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        self.client.force_login(self.usuario)
+class TelaTestCase(TestCase):
+    """As telas são usadas sem login: nenhum teste entra com usuário."""
 
     def criar_cliente(self, nome="Maria da Silva", **extra):
         return Cliente.objects.create(nome=nome, **extra)
 
 
-class AcessoTests(TestCase):
-    def test_telas_exigem_login(self):
-        get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        for nome in ("caderneta:painel", "caderneta:clientes", "caderneta:escolher_venda"):
-            with self.subTest(tela=nome):
-                resposta = self.client.get(reverse(nome))
-                self.assertRedirects(resposta, f"{reverse('contas:entrar')}?next={reverse(nome)}")
+class AcessoTests(TelaTestCase):
+    def test_telas_abrem_sem_login(self):
+        cliente = self.criar_cliente()
+        telas = [
+            reverse("caderneta:painel"),
+            reverse("caderneta:clientes"),
+            reverse("caderneta:cliente_novo"),
+            reverse("caderneta:cliente", args=[cliente.pk]),
+            reverse("caderneta:cliente_extrato", args=[cliente.pk]),
+            reverse("caderneta:escolher_venda"),
+            reverse("caderneta:escolher_pagamento"),
+            reverse("caderneta:venda", args=[cliente.pk]),
+            reverse("estoque:produtos"),
+        ]
+        for endereco in telas:
+            with self.subTest(tela=endereco):
+                self.assertEqual(self.client.get(endereco).status_code, 200)
 
-    def test_sem_usuario_o_login_leva_ao_primeiro_acesso(self):
-        resposta = self.client.get(reverse("contas:entrar"))
-        self.assertRedirects(resposta, reverse("contas:primeiro_acesso"))
+    def test_enderecos_antigos_de_login_levam_ao_painel(self):
+        for endereco in ("/entrar/", "/primeiro-acesso/", "/sair/"):
+            with self.subTest(endereco=endereco):
+                self.assertRedirects(self.client.get(endereco), reverse("caderneta:painel"))
 
-    def test_primeiro_acesso_cria_usuario_e_entra(self):
-        resposta = self.client.post(
-            reverse("contas:primeiro_acesso"),
-            {"username": "mercadinho", "password1": "Caderneta#2026", "password2": "Caderneta#2026"},
-        )
-        self.assertRedirects(resposta, reverse("caderneta:painel"))
-        usuario = get_user_model().objects.get(username="mercadinho")
-        self.assertTrue(usuario.is_superuser)
-        self.assertEqual(self.client.get(reverse("caderneta:painel")).status_code, 200)
+    def test_menu_nao_tem_mais_botao_sair(self):
+        resposta = self.client.get(reverse("caderneta:painel"))
+        self.assertContains(resposta, "Receber pagamento")
+        self.assertNotContains(resposta, "Sair")
 
-    def test_primeiro_acesso_recusa_senha_fraca(self):
-        resposta = self.client.post(
-            reverse("contas:primeiro_acesso"),
-            {"username": "mercadinho", "password1": "123", "password2": "123"},
-        )
+    def test_sistema_so_atende_no_proprio_computador(self):
+        # Sem login, a proteção é o sistema não responder a outros aparelhos da rede.
+        self.assertNotIn("*", settings.ALLOWED_HOSTS)
+        resposta = self.client.get(reverse("caderneta:painel"), HTTP_HOST="192.168.0.10:8000")
+        self.assertEqual(resposta.status_code, 400)
+        resposta = self.client.get(reverse("caderneta:painel"), HTTP_HOST="127.0.0.1:8000")
         self.assertEqual(resposta.status_code, 200)
-        self.assertFalse(get_user_model().objects.exists())
-
-    def test_primeiro_acesso_fica_bloqueado_depois_de_configurado(self):
-        get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        resposta = self.client.get(reverse("contas:primeiro_acesso"))
-        self.assertRedirects(resposta, reverse("contas:entrar"))
-
-    def test_login_com_senha_errada_mostra_mensagem(self):
-        get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        resposta = self.client.post(reverse("contas:entrar"), {"username": "comerciante", "password": "errada"})
-        self.assertContains(resposta, "Usuário ou senha incorretos.")
-
-    def test_login_e_logout(self):
-        get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        resposta = self.client.post(
-            reverse("contas:entrar"), {"username": "comerciante", "password": "senha-forte-123"}
-        )
-        self.assertRedirects(resposta, reverse("caderneta:painel"))
-        resposta = self.client.post(reverse("contas:sair"))
-        self.assertRedirects(resposta, reverse("contas:entrar"))
-        self.assertEqual(self.client.get(reverse("caderneta:painel")).status_code, 302)
 
 
-class ClienteTelasTests(TelaLogadaTestCase):
+class ClienteTelasTests(TelaTestCase):
     def test_cadastra_cliente_normalizando_nome_e_telefone(self):
         resposta = self.client.post(
             reverse("caderneta:cliente_novo"),
@@ -160,7 +144,7 @@ class ClienteTelasTests(TelaLogadaTestCase):
         self.assertFalse(Cliente.objects.filter(pk=sem_lancamento.pk).exists())
 
 
-class LancamentoTelasTests(TelaLogadaTestCase):
+class LancamentoTelasTests(TelaTestCase):
     def test_fluxo_venda_e_pagamento_atualiza_saldo(self):
         cliente = self.criar_cliente()
         resposta = self.client.post(

@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect
@@ -156,7 +155,7 @@ class ProdutoUpdateView(EstoqueMixin, UpdateView):
         return redirect("estoque:produto", pk=self.object.pk)
 
 
-class AlternarSituacaoProdutoView(LoginRequiredMixin, View):
+class AlternarSituacaoProdutoView(View):
     http_method_names = ["post"]
 
     def post(self, request, pk):

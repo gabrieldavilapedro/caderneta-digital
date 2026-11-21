@@ -2,7 +2,6 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -117,8 +116,6 @@ class CustoAoCancelarEntradaTests(BaseCorrecoes):
 class TelasCorrecoesTests(BaseCorrecoes):
     def setUp(self):
         super().setUp()
-        usuario = get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        self.client.force_login(usuario)
         services.registrar_entrada(produto=self.leite, quantidade=D("10"))
         self.cliente = Cliente.objects.create(nome="Maria")
 

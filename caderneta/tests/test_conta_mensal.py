@@ -2,7 +2,6 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -118,8 +117,6 @@ class HistoricoPorMesTests(BaseFaturas):
 class FaturasTelasTests(BaseFaturas):
     def setUp(self):
         super().setUp()
-        usuario = get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        self.client.force_login(usuario)
         # mês passado: compras de R$ 80; R$ 30 pagos neste mês -> faltam R$ 50
         self.lancar("VENDA", "80.00", self.mes_passado)
         self.lancar("PAGAMENTO", "30.00", self.hoje)

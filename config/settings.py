@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "contas",
     "caderneta",
     "estoque",
 ]
@@ -102,10 +101,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Autenticação ------------------------------------------------------------
 
-LOGIN_URL = "contas:entrar"
-LOGIN_REDIRECT_URL = "caderneta:painel"
-LOGOUT_REDIRECT_URL = "contas:entrar"
-
+# Sem login para o comerciante: o sistema só é acessível no próprio computador
+# (runserver em 127.0.0.1 e ALLOWED_HOSTS restrito a localhost). O app de
+# autenticação continua instalado apenas para o /admin (manutenção técnica).
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

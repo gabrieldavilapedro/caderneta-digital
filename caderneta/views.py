@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
@@ -49,8 +48,12 @@ def filtrar_por_busca(queryset, busca):
     return queryset.filter(filtro)
 
 
-class MenuMixin(LoginRequiredMixin):
-    """Exige login e informa ao menu qual item destacar."""
+class MenuMixin:
+    """Informa ao menu qual item destacar.
+
+    O sistema não tem login: ele só é acessível no próprio computador da loja
+    (servidor em 127.0.0.1 e ALLOWED_HOSTS restrito a localhost).
+    """
 
     menu = None
 
@@ -208,7 +211,7 @@ class ClienteUpdateView(MenuMixin, UpdateView):
         return redirect("caderneta:cliente", pk=self.object.pk)
 
 
-class AlternarSituacaoView(LoginRequiredMixin, View):
+class AlternarSituacaoView(View):
     """Inativa ou reativa o cliente. Inativo não aparece na lista padrão e
     não recebe novas vendas, mas o histórico e o saldo são mantidos."""
 

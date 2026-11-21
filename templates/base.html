@@ -13,7 +13,7 @@
 </head>
 <body class="{% block classe_body %}{% endblock %}">
   <a class="link-pular" href="#conteudo">Pular para o conteúdo</a>
-  {% if user.is_authenticated %}{% include "_navegacao.html" %}{% endif %}
+  {% include "_navegacao.html" %}
 
   <main id="conteudo" class="container {% block classe_main %}py-4{% endblock %}">
     {% include "_mensagens.html" %}

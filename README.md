@@ -42,7 +42,9 @@ Projeto Integrador II, Análise e Desenvolvimento de Sistemas (UNESC).
     baixa na hora e, se a venda for cancelada, os produtos voltam ao estoque.
   - **Avisos:** "estoque baixo" no painel e valor total em estoque (a preço de venda e de custo).
 - Campos de valor e quantidade **aceitam apenas números** (e uma vírgula).
-- **Acesso protegido por senha**, criado no primeiro uso, sem senha padrão no código.
+- **Sem login e senha:** abriu, está pronto para usar. O comerciante não corre o risco de esquecer a senha
+  e perder o acesso aos registros. A proteção é o sistema só responder no próprio computador da loja
+  (veja [Segurança sem login](#segurança-sem-login)).
 - Funciona **sem internet** depois de instalado, e se adapta à tela do celular.
 
 ## Tecnologias
@@ -103,11 +105,10 @@ docker compose up -d
 python manage.py migrate
 
 # 6. Iniciar a aplicação
-python manage.py runserver
+python manage.py runserver 127.0.0.1:8000   # só neste computador
 ```
 
-Acesse **http://localhost:8000**. No primeiro acesso, a aplicação pede para criar o usuário e a senha do
-comerciante.
+Acesse **http://localhost:8000**. A tela inicial abre direto, sem login.
 
 > No VS Code, também é possível iniciar pelo menu **Executar e Depurar → "Django: executar servidor"**.
 
@@ -118,7 +119,7 @@ Use o **iniciar com um clique** acima, ou, manualmente:
 ```bash
 docker compose up -d               # o banco reinicia sozinho com o Docker, mas não custa garantir
 source .venv/bin/activate
-python manage.py runserver
+python manage.py runserver 127.0.0.1:8000   # só neste computador
 ```
 
 **Sem internet:** depois da instalação, nada depende de conexão. O Bootstrap e os ícones ficam em
@@ -134,12 +135,12 @@ aparecem na tela.
 python manage.py test
 ```
 
-São **139 testes**:
+São **136 testes**:
 
 - `caderneta/tests/test_regras.py`: regras de negócio, cálculo do saldo, histórico, resumo, restrições do
   banco e leitura de valores.
-- `caderneta/tests/test_telas.py`: fluxos completos pelas telas (login, cadastro, venda, pagamento,
-  cancelamento, filtros etc.).
+- `caderneta/tests/test_telas.py`: fluxos completos pelas telas (acesso sem login, cadastro, venda,
+  pagamento, cancelamento, filtros etc.).
 - `estoque/tests/test_regras.py`: cálculo do estoque, unidades inteiras e fracionadas, estoque
   insuficiente, perda, ajuste, cancelamento, estoque baixo e restrições do banco.
 - `estoque/tests/test_integracao.py`: venda a prazo com produtos (valor calculado, baixa, devolução no
@@ -173,6 +174,29 @@ scripts/restaurar.sh backups/caderneta_2026-11-19_18-00-00.sql   # substitui os 
 - ⚠️ `docker compose down -v` **apaga** o volume e todos os dados. Para parar o banco, use
   `docker compose stop`.
 
+## Segurança sem login
+
+O sistema não pede login nem senha. Para quem tem pouca familiaridade com tecnologia, uma senha esquecida
+significaria ficar sem acesso aos registros dos clientes. Os dados continuam protegidos assim:
+
+- **Só o computador da loja acessa:**
+  - o servidor escuta apenas em `127.0.0.1`;
+  - `DJANGO_ALLOWED_HOSTS` aceita só `localhost` e `127.0.0.1`;
+  - o banco é publicado apenas em `127.0.0.1:5433`.
+
+  Celulares e outros computadores da rede não conseguem abrir o sistema.
+- **Formulários protegidos** contra envio por outros sites (CSRF) e cabeçalhos de segurança ativos
+  (`X-Frame-Options`, `nosniff`, `Referrer-Policy`).
+- **Nada é apagado:** lançamentos são cancelados com motivo, nunca excluídos.
+- **Recomendação:** proteja o computador da loja com a senha do próprio sistema operacional (Windows ou
+  Linux). Assim, quem esquecer a senha recupera o acesso ao computador sem perder os registros da
+  caderneta.
+- O `/admin` do Django continua disponível só para manutenção técnica, com um usuário criado por
+  `python manage.py createsuperuser`. O comerciante não precisa dele.
+
+> ⚠️ Não altere `DJANGO_ALLOWED_HOSTS` nem rode o servidor em `0.0.0.0`. Isso deixaria a caderneta aberta
+> para qualquer aparelho da rede, já que não há login.
+
 ## Estrutura do projeto
 
 ```text
@@ -195,7 +219,6 @@ caderneta-digital/
 │   ├── forms.py            Formulários, incluindo a lista de produtos de uma venda (formset)
 │   ├── views.py / urls.py  Telas do estoque e venda à vista
 │   └── tests/              Testes do estoque e da integração com a caderneta
-├── contas/                 Primeiro acesso, login e logout
 ├── templates/              Páginas HTML (base.html, telas e trechos reutilizáveis)
 ├── static/
 │   ├── css/estilo.css      Tema visual sobre o Bootstrap
@@ -342,10 +365,10 @@ regra (por exemplo, passar a aceitar crédito), basta alterar essa função.
 | RNF Integridade | `DecimalField`, `CheckConstraint`, `transaction.atomic` + `select_for_update`, lançamentos imutáveis | `IntegridadeNoBancoTests`, `CancelamentoTests` |
 | RNF Disponibilidade local | Bootstrap em `static/vendor`, WhiteNoise, PostgreSQL local | Execução com `DJANGO_DEBUG=False` |
 | RNF Confiabilidade | Volume Docker persistente, `scripts/backup.sh` | Backup e restauração testados |
-| RNF Segurança | Login obrigatório, CSRF, validação de senha, banco publicado só em 127.0.0.1, sessão de 12 h | `AcessoTests` |
+| RNF Segurança | Sistema e banco só no próprio computador (servidor em 127.0.0.1, `ALLOWED_HOSTS` restrito), CSRF, cabeçalhos de segurança, sem senha padrão no código | `AcessoTests` |
 | RNF Robustez | Validação em formulário, serviço e banco; mensagens em português; bloqueio de envio duplicado | `RegistroTests`, `test_*_mostra_erro*` |
 | RNF Instalabilidade | `docker-compose.yml`, `requirements.txt`, `.env.example`, este README | — |
-| RNF Verificabilidade | 139 testes automatizados | `python manage.py test` |
+| RNF Verificabilidade | 136 testes automatizados | `python manage.py test` |
 | RNF Desempenho | Saldo calculado em SQL (um único JOIN), paginação, índice por cliente e data | — |
 | RNF Modificabilidade | Regras em `services.py`, cálculo do saldo em um único método | — |
 
@@ -354,7 +377,8 @@ regra (por exemplo, passar a aceitar crédito), basta alterar essa função.
 1. **Cancelamento (estorno)** de lançamentos, com motivo e histórico preservado.
 2. **Total geral a receber** e indicadores do mês na tela inicial.
 3. **Clientes há mais tempo sem pagar**, para tratar o "esquecimento de cobranças" citado no problema.
-4. **Login e LGPD:** acesso protegido, coleta mínima de dados e backups tratados como dados pessoais.
+4. **Acesso simples e LGPD:** sem login e senha para o comerciante esquecer; o sistema só atende no próprio
+   computador, coleta o mínimo de dados e os backups são tratados como dados pessoais.
 5. **Backup e restauração** por script, com o volume Docker documentado.
 6. **Extrato imprimível**, que dá transparência para o consumidor (justificativa do projeto).
 7. **Integridade reforçada:** valores em `Decimal`, restrições no banco, transações com bloqueio de registro

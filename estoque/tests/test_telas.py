@@ -1,7 +1,6 @@
 """Testes das telas do estoque e da venda a prazo com produtos."""
 from decimal import Decimal
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -30,18 +29,16 @@ def dados_itens(*itens, prefixo="itens"):
 
 class TelaEstoqueTestCase(TestCase):
     def setUp(self):
-        usuario = get_user_model().objects.create_user("comerciante", password="senha-forte-123")
-        self.client.force_login(usuario)
         self.hoje = timezone.localdate().isoformat()
         self.leite = Produto.objects.create(nome="Leite", preco_venda=D("5.49"), estoque_minimo=D("6"))
         services.registrar_entrada(produto=self.leite, quantidade=D("10"))
 
 
 class ProdutoTelasTests(TelaEstoqueTestCase):
-    def test_estoque_exige_login(self):
-        self.client.logout()
+    def test_estoque_abre_sem_login(self):
         resposta = self.client.get(reverse("estoque:produtos"))
-        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Leite")
 
     def test_cadastra_produto_com_estoque_inicial(self):
         resposta = self.client.post(
