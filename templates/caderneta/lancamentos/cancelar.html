@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}Cancelar lançamento{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <nav aria-label="Navegação estrutural">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'caderneta:clientes' %}">Clientes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'caderneta:cliente' cliente.pk %}">{{ cliente.nome }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cancelar lançamento</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-3">Cancelar lançamento</h1>
+
+    <div class="card cartao mb-3">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-4 fw-normal text-body-secondary">Tipo</dt><dd class="col-8">{{ movimentacao.get_tipo_display }}</dd>
+          <dt class="col-4 fw-normal text-body-secondary">Valor</dt><dd class="col-8 numero fw-semibold">{{ movimentacao.valor|moeda }}</dd>
+          <dt class="col-4 fw-normal text-body-secondary">Data</dt><dd class="col-8">{{ movimentacao.data|date:"d/m/Y" }}</dd>
+          {% if movimentacao.descricao %}
+            <dt class="col-4 fw-normal text-body-secondary">Descrição</dt><dd class="col-8">{{ movimentacao.descricao }}</dd>
+          {% endif %}
+          {% if movimentacao.itens.all %}
+            <dt class="col-4 fw-normal text-body-secondary">Produtos</dt>
+            <dd class="col-8">{{ movimentacao.itens_texto }} <span class="small text-body-secondary">(voltam ao estoque)</span></dd>
+          {% endif %}
+          <dt class="col-4 fw-normal text-body-secondary">Registrado em</dt><dd class="col-8 mb-0">{{ movimentacao.criado_em|date:"d/m/Y H:i" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <form method="post" class="card cartao" novalidate data-envio-unico>
+      {% csrf_token %}
+      <div class="card-body p-4">
+        <p class="mb-3">
+          Use esta opção para corrigir um lançamento registrado por engano. Ele <strong>continuará no histórico</strong>,
+          marcado como cancelado, e <strong>deixará de contar no saldo</strong>. Depois, se necessário, registre o lançamento correto.
+        </p>
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger" role="alert">{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
+        {% endif %}
+        {% include "_campo.html" with campo=form.motivo %}
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'caderneta:cliente' cliente.pk %}">Não, voltar</a>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancelar lançamento</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

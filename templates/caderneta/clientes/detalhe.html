@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}{{ cliente.nome }}{% endblock %}
+{% block conteudo %}
+<nav aria-label="Navegação estrutural">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'caderneta:clientes' %}">Clientes</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ cliente.nome }}</li>
+  </ol>
+</nav>
+
+{# Cabeçalho com dados do cliente #}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="h3 mb-1">
+      {{ cliente.nome }}
+      {% if not cliente.ativo %}<span class="badge text-bg-secondary align-middle fs-6">Inativo</span>{% endif %}
+    </h1>
+    <div class="text-body-secondary">
+      <i class="bi bi-telephone me-1" aria-hidden="true"></i>{{ cliente.telefone|telefone|default:"Sem telefone" }}
+      <span class="mx-2">·</span>Cliente desde {{ cliente.criado_em|date:"d/m/Y" }}
+    </div>
+    {% if cliente.observacoes %}
+      <p class="small text-body-secondary mb-0 mt-1"><i class="bi bi-sticky me-1" aria-hidden="true"></i>{{ cliente.observacoes }}</p>
+    {% endif %}
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'caderneta:cliente_editar' cliente.pk %}">
+      <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar
+    </a>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'caderneta:cliente_extrato' cliente.pk %}">
+      <i class="bi bi-printer me-1" aria-hidden="true"></i>Extrato
+    </a>
+    <form method="post" action="{% url 'caderneta:cliente_situacao' cliente.pk %}">
+      {% csrf_token %}
+      {% if cliente.ativo %}
+        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-dash me-1" aria-hidden="true"></i>Inativar</button>
+      {% else %}
+        <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Reativar</button>
+      {% endif %}
+    </form>
+    {% if cliente.quantidade_movimentacoes == 0 %}
+      <a class="btn btn-outline-danger btn-sm" href="{% url 'caderneta:cliente_excluir' cliente.pk %}">
+        <i class="bi bi-trash me-1" aria-hidden="true"></i>Excluir
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{# Saldo (RF004) e ações #}
+<div class="row g-3 mb-4">
+  <div class="col-md-5 col-lg-4">
+    <div class="card cartao h-100">
+      <div class="card-body">
+        <div class="rotulo">Saldo devedor</div>
+        <div class="valor-grande numero {% if cliente.saldo > 0 %}text-danger{% else %}text-success{% endif %}">{{ cliente.saldo|moeda }}</div>
+        {% if cliente.saldo <= 0 %}
+          <div class="small text-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Sem pendências</div>
+        {% endif %}
+        <dl class="row small mb-0 mt-3 text-body-secondary">
+          <dt class="col-7 fw-normal">Total comprado a prazo</dt><dd class="col-5 text-end numero mb-1">{{ cliente.total_vendas|moeda }}</dd>
+          <dt class="col-7 fw-normal">Total pago</dt><dd class="col-5 text-end numero mb-1">{{ cliente.total_pagamentos|moeda }}</dd>
+          <dt class="col-7 fw-normal">Último pagamento</dt><dd class="col-5 text-end mb-0">{{ cliente.ultimo_pagamento|date:"d/m/Y"|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7 col-lg-8">
+    <div class="card cartao h-100">
+      <div class="card-body d-flex flex-column justify-content-center gap-2">
+        {% if cliente.ativo %}
+          <a class="btn btn-primary btn-lg" href="{% url 'caderneta:venda' cliente.pk %}">
+            <i class="bi bi-cart-plus me-2" aria-hidden="true"></i>Registrar venda a prazo
+          </a>
+        {% else %}
+          <p class="small text-body-secondary mb-0">Cliente inativo: reative o cadastro para registrar novas vendas.</p>
+        {% endif %}
+        {% if cliente.saldo > 0 %}
+          <a class="btn btn-success btn-lg" href="{% url 'caderneta:pagamento' cliente.pk %}">
+            <i class="bi bi-cash-coin me-2" aria-hidden="true"></i>Registrar pagamento
+          </a>
+        {% else %}
+          <button type="button" class="btn btn-success btn-lg" disabled>
+            <i class="bi bi-cash-coin me-2" aria-hidden="true"></i>Registrar pagamento
+          </button>
+          <p class="small text-body-secondary text-center mb-0">Sem saldo devedor para receber.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Faturas por mês: as compras de cada mês e quanto já foi pago delas #}
+{% if faturas %}
+  <section class="card cartao mb-4" aria-labelledby="titulo-faturas">
+    <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-1">
+      <h2 class="h5 mb-0" id="titulo-faturas">Faturas por mês</h2>
+      <span class="small text-body-secondary">Os pagamentos são descontados das faturas mais antigas primeiro</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <caption class="visually-hidden">Faturas de {{ cliente.nome }}, da mais recente para a mais antiga</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mês</th>
+            <th scope="col" class="text-end">Compras</th>
+            <th scope="col" class="text-end">Pago</th>
+            <th scope="col" class="text-end">Falta pagar</th>
+            <th scope="col" class="text-end">Situação</th>
+            <th scope="col" class="text-end"><span class="visually-hidden">Ver a fatura</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in faturas %}
+            <tr>
+              <td class="text-nowrap">
+                <span class="{% if f.atual %}fw-semibold{% endif %}">{{ f.mes|date:"F \d\e Y" }}</span>
+                {% if f.atual %}<span class="badge bg-primary-subtle text-primary-emphasis ms-1">mês atual</span>{% endif %}
+                <div class="small text-body-secondary">{{ f.quantidade_compras }} compra{{ f.quantidade_compras|pluralize }}</div>
+              </td>
+              <td class="text-end numero">{{ f.compras|moeda }}</td>
+              <td class="text-end numero text-success">{% if f.pago %}{{ f.pago|moeda }}{% else %}<span class="text-body-tertiary">—</span>{% endif %}</td>
+              <td class="text-end numero fw-semibold {% if f.em_aberto > 0 %}text-danger{% endif %}">{{ f.em_aberto|moeda }}</td>
+              <td class="text-end text-nowrap">
+                {% if f.quitada %}
+                  <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Quitada</span>
+                {% elif f.parcial %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis">Paga em parte</span>
+                {% else %}
+                  <span class="badge bg-danger-subtle text-danger-emphasis">Em aberto</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-link text-body-secondary" href="{% url 'caderneta:cliente_extrato' cliente.pk %}?mes={{ f.parametro }}" title="Ver a fatura do mês">
+                  <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span class="visually-hidden">Fatura de {{ f.mes|date:"F \d\e Y" }}</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="fw-semibold">
+            <td>Total</td>
+            <td class="text-end numero">{{ cliente.total_vendas|moeda }}</td>
+            <td class="text-end numero text-success">{{ cliente.total_pagamentos|moeda }}</td>
+            <td class="text-end numero {% if cliente.saldo > 0 %}text-danger{% endif %}">{{ cliente.saldo|moeda }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+{% endif %}
+
+{# Histórico (RF005), separado por mês: cada lançamento fica no mês em que aconteceu #}
+<section class="card cartao" aria-labelledby="titulo-historico">
+  <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-1">
+    <h2 class="h5 mb-0" id="titulo-historico">Histórico de lançamentos</h2>
+    {% if historico_meses %}
+      <span class="small text-body-secondary">
+        {{ cliente.quantidade_movimentacoes }} lançamento{{ cliente.quantidade_movimentacoes|pluralize }}, separados por mês
+      </span>
+    {% endif %}
+  </div>
+  {% for grupo in historico_meses %}
+    <details class="historico-mes"{% if forloop.first %} open{% endif %}>
+      <summary class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-3 py-2">
+        <span>
+          <i class="bi bi-chevron-right seta me-1" aria-hidden="true"></i>
+          <span class="fw-semibold">{{ grupo.mes|date:"F \d\e Y" }}</span>
+          {% if grupo.atual %}<span class="badge bg-primary-subtle text-primary-emphasis ms-1">mês atual</span>{% endif %}
+          <span class="small text-body-secondary ms-1">· {{ grupo.movimentacoes|length }} lançamento{{ grupo.movimentacoes|length|pluralize }}</span>
+        </span>
+        <span class="small numero">
+          compras <strong>{{ grupo.compras|moeda }}</strong>
+          <span class="text-body-tertiary mx-1">·</span>
+          pagamentos <strong class="text-success">{{ grupo.pagamentos|moeda }}</strong>
+        </span>
+      </summary>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0 tabela-historico">
+          <caption class="visually-hidden">Lançamentos de {{ cliente.nome }} em {{ grupo.mes|date:"F \d\e Y" }}, do mais recente para o mais antigo</caption>
+          <thead>
+            <tr class="small">
+              <th scope="col" class="col-data">Data</th>
+              <th scope="col">Lançamento</th>
+              <th scope="col" class="text-end col-valor">Valor</th>
+              <th scope="col" class="text-end col-saldo d-none d-sm-table-cell">Saldo após</th>
+              <th scope="col" class="text-end col-acoes"><span class="visually-hidden">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for m in grupo.movimentacoes %}
+            <tr class="{% if m.cancelada %}linha-cancelada{% endif %}">
+              <td class="numero text-nowrap"><span class="{% if m.cancelada %}riscado{% endif %}">{{ m.data|date:"d/m/Y" }}</span></td>
+              <td>
+                {% if m.eh_venda %}
+                  <span class="badge bg-primary-subtle text-primary-emphasis">Venda</span>
+                {% else %}
+                  <span class="badge bg-success-subtle text-success-emphasis">Pagamento</span>
+                {% endif %}
+                {% if m.descricao %}<span class="ms-1 {% if m.cancelada %}riscado{% endif %}">{{ m.descricao }}</span>{% endif %}
+                {% if m.itens.all %}
+                  <div class="small text-body-secondary mt-1 {% if m.cancelada %}riscado{% endif %}">
+                    <i class="bi bi-box-seam me-1" aria-hidden="true"></i>{{ m.itens_texto }}
+                  </div>
+                {% endif %}
+                {% if m.cancelada %}
+                  <div class="small text-body-secondary mt-1">
+                    <i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Cancelado em {{ m.cancelada_em|date:"d/m/Y H:i" }} — {{ m.motivo_cancelamento }}
+                  </div>
+                {% endif %}
+              </td>
+              <td class="text-end numero text-nowrap fw-semibold {% if m.cancelada %}riscado{% elif not m.eh_venda %}text-success{% endif %}">
+                {% if m.eh_venda %}+{% else %}−{% endif %} {{ m.valor|moeda }}
+              </td>
+              <td class="text-end numero text-nowrap d-none d-sm-table-cell">
+                {% if m.saldo_apos is None %}—{% else %}{{ m.saldo_apos|moeda }}{% endif %}
+              </td>
+              <td class="text-end">
+                {% if not m.cancelada %}
+                  <a class="btn btn-sm btn-link text-body-secondary" href="{% url 'caderneta:lancamento_cancelar' m.pk %}" title="Cancelar lançamento">
+                    <i class="bi bi-x-circle" aria-hidden="true"></i><span class="visually-hidden">Cancelar lançamento de {{ m.data|date:"d/m/Y" }}</span>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  {% empty %}
+    <div class="card-body text-center text-body-secondary py-5">
+      <i class="bi bi-journal fs-2" aria-hidden="true"></i>
+      <p class="mb-0 mt-2">Nenhum lançamento ainda. As vendas a prazo e os pagamentos deste cliente aparecerão aqui.</p>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

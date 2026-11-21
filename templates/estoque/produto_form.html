@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}{% if produto %}Editar {{ produto.nome }}{% else %}Novo produto{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    <nav aria-label="Navegação estrutural">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'estoque:produtos' %}">Estoque</a></li>
+        {% if produto %}
+          <li class="breadcrumb-item"><a href="{% url 'estoque:produto' produto.pk %}">{{ produto.nome }}</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Editar</li>
+        {% else %}
+          <li class="breadcrumb-item active" aria-current="page">Novo produto</li>
+        {% endif %}
+      </ol>
+    </nav>
+    <h1 class="h3 mb-3">{% if produto %}Editar produto{% else %}Cadastrar produto{% endif %}</h1>
+
+    <form method="post" class="card cartao" novalidate data-envio-unico>
+      {% csrf_token %}
+      <div class="card-body p-4">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger" role="alert">{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
+        {% endif %}
+        {% include "_campo.html" with campo=form.nome %}
+        <div class="row g-3">
+          <div class="col-sm-7">{% include "_campo.html" with campo=form.codigo %}</div>
+          <div class="col-sm-5">{% include "_campo.html" with campo=form.unidade %}</div>
+        </div>
+        <div class="row g-3">
+          <div class="col-sm-6">{% include "estoque/_campo_dinheiro.html" with campo=form.preco_venda %}</div>
+          <div class="col-sm-6">{% include "estoque/_campo_dinheiro.html" with campo=form.preco_custo %}</div>
+        </div>
+        <div class="row g-3">
+          <div class="col-sm-6">{% include "_campo.html" with campo=form.estoque_minimo %}</div>
+          {% if "estoque_inicial" in form.fields %}
+            <div class="col-sm-6">{% include "_campo.html" with campo=form.estoque_inicial %}</div>
+          {% endif %}
+        </div>
+        {% if produto %}
+          <p class="small text-body-secondary mb-4">
+            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Para mudar a quantidade em estoque, use
+            <a href="{% url 'estoque:entrada' produto.pk %}">entrada</a> ou
+            <a href="{% url 'estoque:ajuste' produto.pk %}">ajuste pela contagem</a>.
+            Alterar o preço não muda o valor de vendas já registradas.
+          </p>
+        {% endif %}
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% if produto %}{% url 'estoque:produto' produto.pk %}{% else %}{% url 'estoque:produtos' %}{% endif %}">Cancelar</a>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Salvar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

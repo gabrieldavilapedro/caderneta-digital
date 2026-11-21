@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Venda à vista{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-lg-10 col-xl-9">
+    <nav aria-label="Navegação estrutural">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'estoque:produtos' %}">Estoque</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Venda à vista</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1"><i class="bi bi-bag-check text-success me-2" aria-hidden="true"></i>Venda à vista</h1>
+    <p class="text-body-secondary">
+      Venda paga na hora: os produtos saem do estoque e nada é lançado na caderneta.
+      Para vender fiado, use <a href="{% url 'caderneta:escolher_venda' %}">venda a prazo</a>.
+    </p>
+
+    {% if not tem_produtos %}
+      <div class="card cartao">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-box-seam display-5 text-body-tertiary" aria-hidden="true"></i>
+          <h2 class="h5 mt-3">Nenhum produto ativo</h2>
+          <p class="text-body-secondary">Cadastre os produtos da loja antes de registrar vendas.</p>
+          <a class="btn btn-primary" href="{% url 'estoque:produto_novo' %}">Cadastrar produto</a>
+        </div>
+      </div>
+    {% else %}
+      <form method="post" class="card cartao" novalidate data-envio-unico>
+        {% csrf_token %}
+        <div class="card-body p-4">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
+          {% endif %}
+          {% include "estoque/_itens.html" %}
+          <hr class="my-4">
+          <div class="row g-3">
+            <div class="col-sm-5">{% include "_campo.html" with campo=form.data %}</div>
+            <div class="col-sm-7">{% include "_campo.html" with campo=form.observacao %}</div>
+          </div>
+          <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+            <a class="btn btn-lg btn-outline-secondary" href="{% url 'estoque:produtos' %}">Cancelar</a>
+            <button type="submit" class="btn btn-lg btn-success"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Confirmar venda à vista</button>
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

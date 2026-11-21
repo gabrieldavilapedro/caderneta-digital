@@ -1,0 +1,1 @@
+{% load caderneta_extras %}{% if saldo > 0 %}<span class="badge badge-saldo bg-danger-subtle text-danger-emphasis">{{ saldo|moeda }}</span>{% else %}<span class="badge badge-saldo bg-success-subtle text-success-emphasis"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Em dia</span>{% endif %}

@@ -1,0 +1,33 @@
+# Serviço de banco de dados da Caderneta Digital.
+# A aplicação Django roda no venv (ver README.md); o Docker cuida apenas do PostgreSQL.
+#
+#   docker compose up -d      -> inicia o banco
+#   docker compose ps         -> verifica se está "healthy"
+#   docker compose stop       -> para o banco (os dados continuam no volume)
+#
+# ATENÇÃO: "docker compose down -v" APAGA o volume e todos os dados.
+
+name: caderneta-digital
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-caderneta}
+      POSTGRES_USER: ${POSTGRES_USER:-caderneta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-caderneta}
+      TZ: America/Sao_Paulo
+    ports:
+      # Publicado só em 127.0.0.1: o banco não fica acessível pela rede.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - dados_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dados_postgres:

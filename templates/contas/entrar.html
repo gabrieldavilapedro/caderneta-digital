@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block classe_main %}py-5{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-sm-9 col-md-6 col-lg-4">
+    <div class="text-center mb-4">
+      <i class="bi bi-journal-bookmark-fill display-5 text-primary" aria-hidden="true"></i>
+      <h1 class="h3 mt-2 mb-1">Caderneta Digital</h1>
+      <p class="text-body-secondary mb-0">Controle de vendas a prazo</p>
+    </div>
+    <form method="post" class="card cartao" novalidate data-envio-unico>
+      {% csrf_token %}
+      <div class="card-body p-4">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2" role="alert">{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
+        {% endif %}
+        {% include "_campo.html" with campo=form.username %}
+        {% include "_campo.html" with campo=form.password %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="d-grid mt-4">
+          <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

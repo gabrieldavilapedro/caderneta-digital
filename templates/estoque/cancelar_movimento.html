@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}Cancelar movimento{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <nav aria-label="Navegação estrutural">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'estoque:produtos' %}">Estoque</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'estoque:produto' produto.pk %}">{{ produto.nome }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Cancelar movimento</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-3">Cancelar movimento</h1>
+
+    <div class="card cartao mb-3">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-4 fw-normal text-body-secondary">Tipo</dt><dd class="col-8">{{ movimento.get_tipo_display }}{% if movimento.tipo == "VENDA" %} à vista{% endif %}</dd>
+          <dt class="col-4 fw-normal text-body-secondary">Quantidade</dt>
+          <dd class="col-8 numero fw-semibold">{% if movimento.entra %}+{% else %}−{% endif %} {{ movimento.quantidade_absoluta|quantidade:produto }}</dd>
+          <dt class="col-4 fw-normal text-body-secondary">Data</dt><dd class="col-8">{{ movimento.data|date:"d/m/Y" }}</dd>
+          {% if movimento.observacao %}
+            <dt class="col-4 fw-normal text-body-secondary">Observação</dt><dd class="col-8">{{ movimento.observacao }}</dd>
+          {% endif %}
+          <dt class="col-4 fw-normal text-body-secondary">Registrado em</dt><dd class="col-8 mb-0">{{ movimento.criado_em|date:"d/m/Y H:i" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <form method="post" class="card cartao" novalidate data-envio-unico>
+      {% csrf_token %}
+      <div class="card-body p-4">
+        <p class="mb-3">
+          O movimento <strong>continuará no histórico</strong>, marcado como cancelado, e
+          <strong>deixará de contar no estoque</strong>
+          ({% if movimento.entra %}o estoque diminui {% else %}o estoque aumenta {% endif %}{{ movimento.quantidade_absoluta|quantidade:produto }}).
+        </p>
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger" role="alert">{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
+        {% endif %}
+        {% include "_campo.html" with campo=form.motivo %}
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% url 'estoque:produto' produto.pk %}">Não, voltar</a>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cancelar movimento</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

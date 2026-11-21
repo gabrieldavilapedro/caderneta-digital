@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}Clientes{% endblock %}
+{% block conteudo %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Clientes</h1>
+  <a class="btn btn-primary" href="{% url 'caderneta:cliente_novo' %}">
+    <i class="bi bi-person-plus me-1" aria-hidden="true"></i>Novo cliente
+  </a>
+</div>
+
+<form method="get" class="card cartao mb-3" role="search" aria-label="Filtrar clientes">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <label for="busca" class="form-label small fw-semibold">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+          <input type="search" id="busca" name="busca" value="{{ filtros.busca }}" class="form-control"
+                 placeholder="Nome ou telefone" autocomplete="off">
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <label for="situacao" class="form-label small fw-semibold">Situação</label>
+        <select id="situacao" name="situacao" class="form-select" data-enviar-ao-mudar>
+          {% for valor, rotulo in situacoes %}
+            <option value="{{ valor }}"{% if valor == filtros.situacao %} selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label for="ordenar" class="form-label small fw-semibold">Ordenar por</label>
+        <select id="ordenar" name="ordenar" class="form-select" data-enviar-ao-mudar>
+          {% for valor, rotulo in ordenacoes %}
+            <option value="{{ valor }}"{% if valor == filtros.ordenar %} selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-1 d-grid">
+        <button class="btn btn-outline-primary" type="submit">Filtrar</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if clientes %}
+  <div class="card cartao">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <caption class="px-3">
+          {{ page_obj.paginator.count }} cliente{{ page_obj.paginator.count|pluralize }}
+          encontrado{{ page_obj.paginator.count|pluralize }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Cliente</th>
+            <th scope="col" class="text-end">Saldo devedor</th>
+            <th scope="col" class="d-none d-md-table-cell ps-4">Último lançamento</th>
+            <th scope="col" class="text-end">Ações rápidas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in clientes %}
+            <tr>
+              <td>
+                <a class="fw-semibold text-decoration-none" href="{% url 'caderneta:cliente' c.pk %}">{{ c.nome }}</a>
+                {% if not c.ativo %}<span class="badge text-bg-secondary ms-1">Inativo</span>{% endif %}
+                <div class="small text-body-secondary">{{ c.telefone|telefone|default:"Sem telefone" }}</div>
+              </td>
+              <td class="text-end">{% include "caderneta/_saldo.html" with saldo=c.saldo %}</td>
+              <td class="d-none d-md-table-cell text-body-secondary ps-4">
+                {% if c.ultima_movimentacao %}{{ c.ultima_movimentacao|date:"d/m/Y" }}{% else %}—{% endif %}
+              </td>
+              <td class="text-end text-nowrap">
+                {% if c.ativo %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'caderneta:venda' c.pk %}" title="Registrar venda">
+                    <i class="bi bi-cart-plus" aria-hidden="true"></i><span class="visually-hidden">Registrar venda para {{ c.nome }}</span>
+                  </a>
+                {% endif %}
+                {% if c.saldo > 0 %}
+                  <a class="btn btn-sm btn-outline-success ms-1" href="{% url 'caderneta:pagamento' c.pk %}" title="Registrar pagamento">
+                    <i class="bi bi-cash-coin" aria-hidden="true"></i><span class="visually-hidden">Registrar pagamento de {{ c.nome }}</span>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% include "_paginacao.html" with pagina=page_obj %}
+{% else %}
+  <div class="card cartao">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-people display-5 text-body-tertiary" aria-hidden="true"></i>
+      {% if filtros.busca or filtros.situacao != "ativos" %}
+        <h2 class="h5 mt-3">Nenhum cliente encontrado</h2>
+        <p class="text-body-secondary">Tente outro nome ou mude o filtro de situação.</p>
+        <a class="btn btn-outline-secondary" href="{% url 'caderneta:clientes' %}">Limpar filtros</a>
+      {% else %}
+        <h2 class="h5 mt-3">Nenhum cliente cadastrado ainda</h2>
+        <p class="text-body-secondary">Cadastre o primeiro cliente para começar a registrar as vendas a prazo.</p>
+        <a class="btn btn-primary" href="{% url 'caderneta:cliente_novo' %}">Cadastrar cliente</a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

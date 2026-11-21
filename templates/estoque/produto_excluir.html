@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Excluir {{ produto.nome }}{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card cartao">
+      <div class="card-body p-4">
+        {% if possui_movimentos %}
+          <h1 class="h4"><i class="bi bi-exclamation-triangle text-warning me-2" aria-hidden="true"></i>Não é possível excluir</h1>
+          <p><strong>{{ produto.nome }}</strong> possui movimentos de estoque. Para preservar o histórico, ele não pode ser excluído.</p>
+          <p class="text-body-secondary">Se o produto não é mais vendido, use a opção <strong>Inativar</strong>.</p>
+          <a class="btn btn-outline-secondary" href="{% url 'estoque:produto' produto.pk %}">Voltar</a>
+        {% else %}
+          <h1 class="h4"><i class="bi bi-trash text-danger me-2" aria-hidden="true"></i>Excluir produto</h1>
+          <p>Deseja excluir o cadastro de <strong>{{ produto.nome }}</strong>? Esta ação não pode ser desfeita.</p>
+          <form method="post" class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2" data-envio-unico>
+            {% csrf_token %}
+            <a class="btn btn-outline-secondary" href="{% url 'estoque:produto' produto.pk %}">Não, voltar</a>
+            <button type="submit" class="btn btn-danger">Sim, excluir</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

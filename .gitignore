@@ -1,0 +1,22 @@
+# Ambiente virtual e configurações locais
+.venv/
+venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
+
+# Django
+staticfiles/
+*.sqlite3
+
+# Backups do banco (contêm dados pessoais de clientes)
+backups/
+
+# Editores / sistema
+.idea/
+.DS_Store
+Thumbs.db

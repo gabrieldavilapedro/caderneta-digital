@@ -1,0 +1,186 @@
+/* Caderneta Digital — ajustes de tema sobre o Bootstrap 5.3 */
+
+:root {
+  --cd-azul: #24527a;
+  --cd-azul-escuro: #1b3f5e;
+  --cd-azul-profundo: #142f47;
+  --cd-papel: #f5f3ee;
+
+  --bs-primary: var(--cd-azul);
+  --bs-primary-rgb: 36, 82, 122;
+  --bs-primary-text-emphasis: var(--cd-azul-profundo);
+  --bs-primary-bg-subtle: #dfe8f1;
+  --bs-primary-border-subtle: #b3c8db;
+  --bs-link-color: var(--cd-azul);
+  --bs-link-color-rgb: 36, 82, 122;
+  --bs-link-hover-color: var(--cd-azul-escuro);
+  --bs-link-hover-color-rgb: 27, 63, 94;
+  --bs-focus-ring-color: rgba(36, 82, 122, .3);
+}
+
+/* Fundo "papel" só na página; cartões, tabelas e campos continuam brancos. */
+body { background-color: var(--cd-papel); }
+
+/* Botões na cor da marca */
+.btn-primary {
+  --bs-btn-bg: var(--cd-azul);
+  --bs-btn-border-color: var(--cd-azul);
+  --bs-btn-hover-bg: var(--cd-azul-escuro);
+  --bs-btn-hover-border-color: var(--cd-azul-escuro);
+  --bs-btn-active-bg: var(--cd-azul-profundo);
+  --bs-btn-active-border-color: var(--cd-azul-profundo);
+  --bs-btn-disabled-bg: var(--cd-azul);
+  --bs-btn-disabled-border-color: var(--cd-azul);
+  --bs-btn-focus-shadow-rgb: 36, 82, 122;
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--cd-azul);
+  --bs-btn-border-color: var(--cd-azul);
+  --bs-btn-hover-bg: var(--cd-azul);
+  --bs-btn-hover-border-color: var(--cd-azul);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: var(--cd-azul-escuro);
+  --bs-btn-active-border-color: var(--cd-azul-escuro);
+  --bs-btn-active-color: #fff;
+  --bs-btn-focus-shadow-rgb: 36, 82, 122;
+}
+.pagination {
+  --bs-pagination-color: var(--cd-azul);
+  --bs-pagination-active-bg: var(--cd-azul);
+  --bs-pagination-active-border-color: var(--cd-azul);
+  --bs-pagination-focus-box-shadow: 0 0 0 .25rem rgba(36, 82, 122, .25);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: #7fa1c0;
+  box-shadow: 0 0 0 .25rem rgba(36, 82, 122, .2);
+}
+.list-group-item.active {
+  background-color: var(--cd-azul);
+  border-color: var(--cd-azul);
+}
+
+/* Barra de navegação */
+.barra-principal { background-color: var(--cd-azul); }
+.barra-principal .nav-link.active { font-weight: 600; }
+
+/* Cartões */
+.cartao {
+  border: 1px solid rgba(0, 0, 0, .06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  overflow: hidden;
+}
+.cartao-destaque {
+  background: linear-gradient(135deg, var(--cd-azul), var(--cd-azul-profundo));
+  color: #fff;
+}
+.cartao-destaque .rotulo { color: rgba(255, 255, 255, .8); }
+
+.rotulo {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+.etapa {
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+.valor-grande { font-size: 2.1rem; font-weight: 700; line-height: 1.2; margin: .25rem 0; }
+.valor-medio  { font-size: 1.5rem; font-weight: 700; line-height: 1.2; margin: .25rem 0; }
+.numero { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.text-capitalize-first::first-letter { text-transform: uppercase; }
+
+.badge-saldo { font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Ações rápidas do painel */
+.acao-rapida {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  padding-top: .9rem;
+  padding-bottom: .9rem;
+}
+.acao-rapida .bi { font-size: 1.4rem; }
+@media (max-width: 575.98px) {
+  .acao-rapida { flex-direction: column; gap: .2rem; font-size: 1rem; }
+}
+
+/* Ícones dos lançamentos */
+.icone-lancamento {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.icone-lancamento.venda { background: var(--bs-primary-bg-subtle); color: var(--cd-azul); }
+.icone-lancamento.pagamento { background: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
+
+/* Lançamentos cancelados */
+.riscado { text-decoration: line-through; }
+.linha-cancelada > td { background-color: var(--bs-tertiary-bg); color: var(--bs-secondary-color); }
+
+/* Prévia do lançamento */
+.previa { background: var(--bs-tertiary-bg); border: 1px dashed var(--bs-border-color); }
+.input-group-lg .valor { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Produtos do estoque na venda a prazo (seção opcional) */
+.produtos-estoque {
+  border: 1px solid var(--bs-border-color);
+  border-radius: .5rem;
+  padding: .75rem 1rem;
+  background: var(--bs-tertiary-bg);
+}
+.produtos-estoque[open] { background: var(--bs-body-bg); }
+.produtos-estoque summary { cursor: pointer; }
+
+/* Histórico do cliente separado por mês */
+.historico-mes { border-top: 1px solid var(--bs-border-color); }
+.historico-mes > summary {
+  cursor: pointer;
+  list-style: none;
+  background: var(--bs-tertiary-bg);
+}
+.historico-mes > summary::-webkit-details-marker { display: none; }
+.historico-mes > summary:hover { background: var(--bs-secondary-bg); }
+.historico-mes > summary .seta { display: inline-block; transition: transform .15s ease; }
+.historico-mes[open] > summary .seta { transform: rotate(90deg); }
+/* Mesmas larguras de coluna em todos os meses, para os valores ficarem alinhados */
+@media (min-width: 576px) {
+  .tabela-historico { table-layout: fixed; }
+  .tabela-historico .col-data { width: 8rem; }
+  .tabela-historico .col-valor,
+  .tabela-historico .col-saldo { width: 9.5rem; }
+  .tabela-historico .col-acoes { width: 3.5rem; }
+}
+
+/* Mensagens */
+.mensagens .alert { box-shadow: 0 1px 2px rgba(0, 0, 0, .05); }
+
+/* Acessibilidade: link "pular para o conteúdo" visível só ao receber foco */
+.link-pular {
+  position: absolute;
+  left: -9999px;
+  top: .5rem;
+  z-index: 2000;
+  padding: .5rem 1rem;
+  background: #fff;
+  border-radius: .375rem;
+}
+.link-pular:focus { left: .5rem; }
+
+/* Impressão do extrato */
+@media print {
+  .nao-imprimir, .link-pular { display: none !important; }
+  body { background: #fff; }
+  main.container { max-width: 100%; padding: 0 !important; }
+  .cartao { border: 0; box-shadow: none; }
+  .extrato .card-body { padding: 0 !important; }
+}

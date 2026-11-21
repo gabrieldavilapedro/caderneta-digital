@@ -1,0 +1,23 @@
+{# Uma linha de produto do formset de itens (venda à vista e venda a prazo). #}
+<div class="row g-2 align-items-start item-venda" data-item>
+  <div class="col-12 col-md-6">
+    <label class="visually-hidden" for="{{ item.produto.id_for_label }}">Produto</label>
+    {{ item.produto }}{{ item.preco_exibido }}
+    {% for erro in item.produto.errors %}<div class="invalid-feedback">{{ erro }}</div>{% endfor %}
+    <div class="form-text" data-item-estoque></div>
+  </div>
+  <div class="col-7 col-md-3">
+    <label class="visually-hidden" for="{{ item.quantidade.id_for_label }}">Quantidade</label>
+    <div class="input-group has-validation">
+      {{ item.quantidade }}
+      <span class="input-group-text" data-item-unidade>un</span>
+      {% for erro in item.quantidade.errors %}<div class="invalid-feedback">{{ erro }}</div>{% endfor %}
+    </div>
+  </div>
+  <div class="col-3 col-md-2 text-end numero fw-semibold pt-2" data-item-subtotal>—</div>
+  <div class="col-2 col-md-1 text-end">
+    <button type="button" class="btn btn-outline-secondary" data-item-remover title="Remover produto">
+      <i class="bi bi-x-lg" aria-hidden="true"></i><span class="visually-hidden">Remover produto</span>
+    </button>
+  </div>
+</div>

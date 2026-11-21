@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+<div class="mb-4">
+  <h1 class="h3 mb-1">Resumo da caderneta</h1>
+  <p class="text-body-secondary mb-0 text-capitalize-first">{{ resumo.hoje|date:"l, j \d\e F \d\e Y"|lower }}</p>
+</div>
+
+{# Indicadores #}
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-4">
+    <div class="card cartao cartao-destaque h-100">
+      <div class="card-body">
+        <div class="rotulo">Total a receber</div>
+        <div class="valor-grande numero">{{ resumo.total_a_receber|moeda }}</div>
+        <div class="small opacity-75">
+          {{ resumo.clientes_com_debito }} cliente{{ resumo.clientes_com_debito|pluralize }} com débito
+          · {{ resumo.clientes_ativos }} ativo{{ resumo.clientes_ativos|pluralize }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4">
+    <div class="card cartao h-100">
+      <div class="card-body">
+        <div class="rotulo"><i class="bi bi-cart-plus me-1" aria-hidden="true"></i>Vendas a prazo no mês</div>
+        <div class="valor-medio numero">{{ resumo.vendas_mes|moeda }}</div>
+        <div class="small text-body-secondary">desde 1º de {{ resumo.hoje|date:"F"|lower }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-4">
+    <div class="card cartao h-100">
+      <div class="card-body">
+        <div class="rotulo"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Recebido no mês</div>
+        <div class="valor-medio numero text-success">{{ resumo.pagamentos_mes|moeda }}</div>
+        <div class="small text-body-secondary">pagamentos registrados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Ações rápidas #}
+<div class="row g-2 g-md-3 mb-4">
+  <div class="col-12 col-md-4 d-grid">
+    <a class="btn btn-primary btn-lg acao-rapida" href="{% url 'caderneta:escolher_venda' %}">
+      <i class="bi bi-cart-plus" aria-hidden="true"></i><span>Registrar venda a prazo</span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 d-grid">
+    <a class="btn btn-success btn-lg acao-rapida" href="{% url 'caderneta:escolher_pagamento' %}">
+      <i class="bi bi-cash-coin" aria-hidden="true"></i><span>Receber pagamento</span>
+    </a>
+  </div>
+  <div class="col-6 col-md-4 d-grid">
+    <a class="btn btn-outline-primary btn-lg acao-rapida bg-body" href="{% url 'caderneta:cliente_novo' %}">
+      <i class="bi bi-person-plus" aria-hidden="true"></i><span>Cadastrar cliente</span>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  {# Cobranças: quem está há mais tempo sem pagar #}
+  <div class="col-lg-6">
+    <section class="card cartao" aria-labelledby="titulo-cobrancas">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h2 class="h6 mb-0" id="titulo-cobrancas"><i class="bi bi-alarm me-1" aria-hidden="true"></i>Há mais tempo sem pagar</h2>
+        <a class="small" href="{% url 'caderneta:clientes' %}?situacao=com_debito&amp;ordenar=saldo">Ver todos com débito</a>
+      </div>
+      {% if resumo.cobrancas %}
+        <div class="list-group list-group-flush">
+          {% for c in resumo.cobrancas %}
+            <a href="{% url 'caderneta:cliente' c.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <div class="fw-semibold">{{ c.nome }}</div>
+                <div class="small {% if c.dias_sem_pagar >= 30 %}text-danger{% else %}text-body-secondary{% endif %}">
+                  {% if c.dias_sem_pagar >= 30 %}<i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{% endif %}
+                  {% if c.ultimo_pagamento %}Último pagamento {{ c.ultimo_pagamento|tempo_desde }}
+                  {% else %}Nenhum pagamento · primeira compra {{ c.primeira_venda|tempo_desde }}{% endif %}
+                </div>
+              </div>
+              {% include "caderneta/_saldo.html" with saldo=c.saldo %}
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card-body text-center text-body-secondary py-5">
+          <i class="bi bi-emoji-smile fs-2" aria-hidden="true"></i>
+          <p class="mb-0 mt-2">Nenhum cliente com débito no momento.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    {# Estoque baixo #}
+    <section class="card cartao mt-3" aria-labelledby="titulo-estoque-baixo">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h2 class="h6 mb-0" id="titulo-estoque-baixo"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Estoque baixo</h2>
+        {% if resumo.total_estoque_baixo %}
+          <a class="small" href="{% url 'estoque:produtos' %}?situacao=estoque_baixo&amp;ordenar=menor_estoque">
+            Ver todos ({{ resumo.total_estoque_baixo }})
+          </a>
+        {% endif %}
+      </div>
+      {% if resumo.estoque_baixo %}
+        <div class="list-group list-group-flush">
+          {% for p in resumo.estoque_baixo %}
+            <a href="{% url 'estoque:produto' p.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <div class="fw-semibold">{{ p.nome }}</div>
+                <div class="small text-body-secondary">mínimo: {{ p.estoque_minimo|quantidade:p }}</div>
+              </div>
+              {% include "estoque/_estoque.html" with produto=p %}
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card-body text-center text-body-secondary py-4">
+          <i class="bi bi-check2-circle fs-4" aria-hidden="true"></i>
+          <p class="mb-0 mt-1 small">Nenhum produto abaixo do estoque mínimo.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  {# Últimos lançamentos #}
+  <div class="col-lg-6">
+    <section class="card cartao h-100" aria-labelledby="titulo-ultimos">
+      <div class="card-header bg-transparent">
+        <h2 class="h6 mb-0" id="titulo-ultimos"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Últimos lançamentos</h2>
+      </div>
+      {% if resumo.ultimos_lancamentos %}
+        <div class="list-group list-group-flush">
+          {% for m in resumo.ultimos_lancamentos %}
+            <a href="{% url 'caderneta:cliente' m.cliente_id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2">
+              <div class="d-flex align-items-center gap-3">
+                <span class="icone-lancamento {% if m.eh_venda %}venda{% else %}pagamento{% endif %}" aria-hidden="true">
+                  <i class="bi {% if m.eh_venda %}bi-cart{% else %}bi-cash{% endif %}"></i>
+                </span>
+                <div>
+                  <div class="fw-semibold {% if m.cancelada %}riscado{% endif %}">{{ m.cliente.nome }}</div>
+                  <div class="small text-body-secondary">
+                    {{ m.get_tipo_display }} · {{ m.data|date:"d/m/Y" }}{% if m.descricao_completa %} · {{ m.descricao_completa|truncatechars:40 }}{% endif %}
+                    {% if m.cancelada %}<span class="badge text-bg-secondary ms-1">Cancelado</span>{% endif %}
+                  </div>
+                </div>
+              </div>
+              <span class="numero fw-semibold {% if m.cancelada %}riscado text-body-secondary{% elif not m.eh_venda %}text-success{% endif %}">
+                {% if m.eh_venda %}+{% else %}−{% endif %} {{ m.valor|moeda }}
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="card-body text-center text-body-secondary py-5">
+          <i class="bi bi-journal" aria-hidden="true" style="font-size: 2rem"></i>
+          <p class="mb-2 mt-2">Nenhum lançamento registrado ainda.</p>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'caderneta:cliente_novo' %}">Cadastrar o primeiro cliente</a>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

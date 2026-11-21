@@ -1,0 +1,26 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#24527a">
+  <title>{% block titulo %}Início{% endblock %} · Caderneta Digital</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  {# Bootstrap e ícones servidos localmente: a aplicação funciona sem internet (RNF01). #}
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
+</head>
+<body class="{% block classe_body %}{% endblock %}">
+  <a class="link-pular" href="#conteudo">Pular para o conteúdo</a>
+  {% if user.is_authenticated %}{% include "_navegacao.html" %}{% endif %}
+
+  <main id="conteudo" class="container {% block classe_main %}py-4{% endblock %}">
+    {% include "_mensagens.html" %}
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'js/caderneta.js' %}"></script>
+</body>
+</html>

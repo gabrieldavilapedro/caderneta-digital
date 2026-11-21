@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}{% if fatura %}Fatura de {{ fatura.mes|date:"F \d\e Y" }}{% else %}Extrato{% endif %} · {{ cliente.nome }}{% endblock %}
+{% block conteudo %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 nao-imprimir">
+  <a href="{% url 'caderneta:cliente' cliente.pk %}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Voltar para {{ cliente.nome }}</a>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    {% if faturas %}
+      <form method="get" class="d-flex align-items-center gap-2" aria-label="Escolher o que mostrar">
+        <label for="mes" class="small fw-semibold text-nowrap">Mostrar</label>
+        <select id="mes" name="mes" class="form-select" data-enviar-ao-mudar>
+          <option value="">Todos os lançamentos</option>
+          {% for f in faturas %}
+            <option value="{{ f.parametro }}"{% if fatura and fatura.mes == f.mes %} selected{% endif %}>Fatura de {{ f.mes|date:"F \d\e Y" }}</option>
+          {% endfor %}
+        </select>
+        <noscript><button type="submit" class="btn btn-outline-primary">Ver</button></noscript>
+      </form>
+    {% endif %}
+    <button type="button" class="btn btn-primary" data-imprimir><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir</button>
+  </div>
+</div>
+
+<article class="card cartao extrato">
+  <div class="card-body p-4">
+    {% if fatura %}
+      {# ---------- Fatura de um mês ---------- #}
+      <header class="d-flex flex-wrap justify-content-between gap-3 border-bottom pb-3 mb-3">
+        <div>
+          <h1 class="h4 mb-1">Fatura de {{ fatura.mes|date:"F \d\e Y" }}</h1>
+          <div class="fw-semibold">{{ cliente.nome }}</div>
+          <div class="small text-body-secondary">{{ cliente.telefone|telefone }}</div>
+        </div>
+        <div class="text-sm-end">
+          <div class="rotulo">Falta pagar</div>
+          <div class="fs-3 fw-bold numero {% if fatura.em_aberto > 0 %}text-danger{% endif %}">{{ fatura.em_aberto|moeda }}</div>
+          {% if fatura.quitada %}
+            <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Fatura quitada</span>
+          {% elif fatura.parcial %}
+            <span class="badge bg-warning-subtle text-warning-emphasis">Paga em parte</span>
+          {% else %}
+            <span class="badge bg-danger-subtle text-danger-emphasis">Em aberto</span>
+          {% endif %}
+          <div class="small text-body-secondary mt-1">Emitido em {{ emitido_em|date:"d/m/Y H:i" }}</div>
+        </div>
+      </header>
+
+      <h2 class="h6 mb-2">Compras do mês</h2>
+      <table class="table table-sm mb-4">
+        <thead>
+          <tr><th scope="col">Data</th><th scope="col">Compra</th><th scope="col" class="text-end">Valor</th></tr>
+        </thead>
+        <tbody>
+          {% for m in compras %}
+            <tr class="{% if m.cancelada %}text-body-secondary{% endif %}">
+              <td class="numero">{{ m.data|date:"d/m/Y" }}</td>
+              <td>
+                {{ m.descricao|default:"Venda a prazo" }}
+                {% if m.cancelada %}<em>(cancelada: {{ m.motivo_cancelamento }})</em>{% endif %}
+                {% if m.itens.all %}<div class="small text-body-secondary">{{ m.itens_texto }}</div>{% endif %}
+              </td>
+              <td class="text-end numero {% if m.cancelada %}riscado{% endif %}">{{ m.valor|moeda }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="fw-semibold"><td colspan="2">Total da fatura</td><td class="text-end numero">{{ fatura.compras|moeda }}</td></tr>
+        </tfoot>
+      </table>
+
+      <h2 class="h6 mb-2">Pagamentos descontados desta fatura</h2>
+      <table class="table table-sm mb-3">
+        <thead>
+          <tr><th scope="col">Data</th><th scope="col">Pagamento</th><th scope="col" class="text-end">Descontado</th></tr>
+        </thead>
+        <tbody>
+          {% for pagamento, descontado in fatura.pagamentos %}
+            <tr>
+              <td class="numero">{{ pagamento.data|date:"d/m/Y" }}</td>
+              <td>
+                {{ pagamento.descricao|default:"Pagamento" }}
+                {% if descontado != pagamento.valor %}
+                  <div class="small text-body-secondary">parte de um pagamento de {{ pagamento.valor|moeda }}</div>
+                {% endif %}
+              </td>
+              <td class="text-end numero text-success">− {{ descontado|moeda }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="text-body-secondary">Nenhum pagamento descontado desta fatura ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <dl class="row small mb-0">
+        <dt class="col-8 col-sm-10 text-sm-end fw-normal">Total da fatura</dt><dd class="col-4 col-sm-2 text-end numero mb-1">{{ fatura.compras|moeda }}</dd>
+        <dt class="col-8 col-sm-10 text-sm-end fw-normal">Pago</dt><dd class="col-4 col-sm-2 text-end numero mb-1">− {{ fatura.pago|moeda }}</dd>
+        <dt class="col-8 col-sm-10 text-sm-end">Falta pagar</dt><dd class="col-4 col-sm-2 text-end numero fw-bold mb-0">{{ fatura.em_aberto|moeda }}</dd>
+      </dl>
+      <p class="small text-body-secondary mt-3 mb-0">
+        Os pagamentos são descontados das faturas mais antigas primeiro.
+        Saldo devedor total do cliente: <strong>{{ cliente.saldo|moeda }}</strong>.
+      </p>
+
+    {% else %}
+      {# ---------- Extrato completo ---------- #}
+      <header class="d-flex flex-wrap justify-content-between gap-3 border-bottom pb-3 mb-3">
+        <div>
+          <h1 class="h4 mb-1">Extrato de compras a prazo</h1>
+          <div class="fw-semibold">{{ cliente.nome }}</div>
+          <div class="small text-body-secondary">{{ cliente.telefone|telefone }}</div>
+          <div class="small mt-1">Todos os lançamentos</div>
+        </div>
+        <div class="text-sm-end">
+          <div class="rotulo">Saldo devedor</div>
+          <div class="fs-3 fw-bold numero">{{ saldo_final|moeda }}</div>
+          <div class="small text-body-secondary">Emitido em {{ emitido_em|date:"d/m/Y H:i" }}</div>
+        </div>
+      </header>
+
+      {% if movimentacoes %}
+        <table class="table table-sm mb-3">
+          <thead>
+            <tr><th scope="col">Data</th><th scope="col">Lançamento</th><th scope="col" class="text-end">Valor</th><th scope="col" class="text-end">Saldo</th></tr>
+          </thead>
+          <tbody>
+            {% for m in movimentacoes %}
+              <tr class="{% if m.cancelada %}text-body-secondary{% endif %}">
+                <td class="numero">{{ m.data|date:"d/m/Y" }}</td>
+                <td>
+                  {{ m.get_tipo_display }}{% if m.descricao %} — {{ m.descricao }}{% endif %}
+                  {% if m.cancelada %}<em>(cancelado: {{ m.motivo_cancelamento }})</em>{% endif %}
+                  {% if m.itens.all %}<div class="small text-body-secondary">{{ m.itens_texto }}</div>{% endif %}
+                </td>
+                <td class="text-end numero {% if m.cancelada %}riscado{% endif %}">{% if m.eh_venda %}+{% else %}−{% endif %} {{ m.valor|moeda }}</td>
+                <td class="text-end numero">{% if m.saldo_apos is None %}—{% else %}{{ m.saldo_apos|moeda }}{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <dl class="row small mb-0">
+          <dt class="col-8 col-sm-10 text-sm-end fw-normal">Compras a prazo</dt><dd class="col-4 col-sm-2 text-end numero mb-1">+ {{ total_compras|moeda }}</dd>
+          <dt class="col-8 col-sm-10 text-sm-end fw-normal">Pagamentos</dt><dd class="col-4 col-sm-2 text-end numero mb-1">− {{ total_pagamentos|moeda }}</dd>
+          <dt class="col-8 col-sm-10 text-sm-end">Saldo devedor</dt><dd class="col-4 col-sm-2 text-end numero fw-bold mb-0">{{ saldo_final|moeda }}</dd>
+        </dl>
+      {% else %}
+        <p class="text-body-secondary mb-0">Nenhum lançamento registrado.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+</article>
+{% endblock %}

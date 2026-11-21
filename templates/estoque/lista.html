@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load caderneta_extras %}
+{% block titulo %}Estoque{% endblock %}
+{% block conteudo %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Estoque</h1>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-primary bg-body" href="{% url 'estoque:escolher_entrada' %}">
+      <i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Registrar entrada
+    </a>
+    <a class="btn btn-outline-primary bg-body" href="{% url 'estoque:venda_avista' %}">
+      <i class="bi bi-bag-check me-1" aria-hidden="true"></i>Venda à vista
+    </a>
+    <a class="btn btn-primary" href="{% url 'estoque:produto_novo' %}">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Novo produto
+    </a>
+  </div>
+</div>
+
+{# Indicadores #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">
+    <div class="card cartao h-100"><div class="card-body">
+      <div class="rotulo">Produtos ativos</div>
+      <div class="valor-medio numero">{{ resumo.produtos_ativos }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a class="card cartao h-100 text-decoration-none" href="?situacao=estoque_baixo">
+      <div class="card-body">
+        <div class="rotulo"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Estoque baixo</div>
+        <div class="valor-medio numero {% if resumo.estoque_baixo %}text-warning-emphasis{% endif %}">{{ resumo.estoque_baixo }}</div>
+        <div class="small text-body-secondary">{{ resumo.sem_estoque }} sem estoque</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card cartao h-100"><div class="card-body">
+      <div class="rotulo">Em estoque (preço de venda)</div>
+      <div class="valor-medio numero">{{ resumo.valor_venda|moeda }}</div>
+    </div></div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card cartao h-100"><div class="card-body">
+      <div class="rotulo">Em estoque (custo)</div>
+      <div class="valor-medio numero">{{ resumo.valor_custo|moeda }}</div>
+      <div class="small text-body-secondary">produtos com custo informado</div>
+    </div></div>
+  </div>
+</div>
+
+<form method="get" class="card cartao mb-3" role="search" aria-label="Filtrar produtos">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <label for="busca" class="form-label small fw-semibold">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+          <input type="search" id="busca" name="busca" value="{{ filtros.busca }}" class="form-control"
+                 placeholder="Nome ou código" autocomplete="off">
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <label for="situacao" class="form-label small fw-semibold">Situação</label>
+        <select id="situacao" name="situacao" class="form-select" data-enviar-ao-mudar>
+          {% for valor, rotulo in situacoes %}
+            <option value="{{ valor }}"{% if valor == filtros.situacao %} selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-3">
+        <label for="ordenar" class="form-label small fw-semibold">Ordenar por</label>
+        <select id="ordenar" name="ordenar" class="form-select" data-enviar-ao-mudar>
+          {% for valor, rotulo in ordenacoes %}
+            <option value="{{ valor }}"{% if valor == filtros.ordenar %} selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-1 d-grid">
+        <button class="btn btn-outline-primary" type="submit">Filtrar</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if produtos %}
+  <div class="card cartao">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <caption class="px-3">
+          {{ page_obj.paginator.count }} produto{{ page_obj.paginator.count|pluralize }}
+          encontrado{{ page_obj.paginator.count|pluralize }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Produto</th>
+            <th scope="col" class="text-end">Estoque</th>
+            <th scope="col" class="text-end d-none d-sm-table-cell">Mínimo</th>
+            <th scope="col" class="text-end d-none d-md-table-cell">Preço</th>
+            <th scope="col" class="text-end">Ações rápidas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in produtos %}
+            <tr>
+              <td>
+                <a class="fw-semibold text-decoration-none" href="{% url 'estoque:produto' p.pk %}">{{ p.nome }}</a>
+                {% if not p.ativo %}<span class="badge text-bg-secondary ms-1">Inativo</span>{% endif %}
+                <div class="small text-body-secondary">{% if p.codigo %}Cód. {{ p.codigo }} · {% endif %}{{ p.get_unidade_display }}</div>
+              </td>
+              <td class="text-end">{% include "estoque/_estoque.html" with produto=p %}</td>
+              <td class="text-end text-body-secondary numero d-none d-sm-table-cell">{{ p.estoque_minimo|quantidade:p }}</td>
+              <td class="text-end numero d-none d-md-table-cell">{{ p.preco_venda|moeda }}<span class="text-body-secondary small">/{{ p.sigla }}</span></td>
+              <td class="text-end text-nowrap">
+                {% if p.ativo %}
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'estoque:entrada' p.pk %}" title="Registrar entrada">
+                    <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i><span class="visually-hidden">Registrar entrada de {{ p.nome }}</span>
+                  </a>
+                {% endif %}
+                <a class="btn btn-sm btn-outline-secondary ms-1" href="{% url 'estoque:ajuste' p.pk %}" title="Ajustar pela contagem">
+                  <i class="bi bi-clipboard-check" aria-hidden="true"></i><span class="visually-hidden">Ajustar estoque de {{ p.nome }}</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% include "_paginacao.html" with pagina=page_obj %}
+{% else %}
+  <div class="card cartao">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-box-seam display-5 text-body-tertiary" aria-hidden="true"></i>
+      {% if filtros.busca or filtros.situacao != "ativos" %}
+        <h2 class="h5 mt-3">Nenhum produto encontrado</h2>
+        <p class="text-body-secondary">Tente outro nome ou mude o filtro de situação.</p>
+        <a class="btn btn-outline-secondary" href="{% url 'estoque:produtos' %}">Limpar filtros</a>
+      {% else %}
+        <h2 class="h5 mt-3">Nenhum produto cadastrado ainda</h2>
+        <p class="text-body-secondary">Cadastre os produtos da loja para controlar o estoque e agilizar as vendas.</p>
+        <a class="btn btn-primary" href="{% url 'estoque:produto_novo' %}">Cadastrar produto</a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

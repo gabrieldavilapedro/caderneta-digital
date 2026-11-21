@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}{% if cliente %}Editar {{ cliente.nome }}{% else %}Novo cliente{% endif %}{% endblock %}
+{% block conteudo %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <nav aria-label="Navegação estrutural">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'caderneta:clientes' %}">Clientes</a></li>
+        {% if cliente %}
+          <li class="breadcrumb-item"><a href="{% url 'caderneta:cliente' cliente.pk %}">{{ cliente.nome }}</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Editar</li>
+        {% else %}
+          <li class="breadcrumb-item active" aria-current="page">Novo cliente</li>
+        {% endif %}
+      </ol>
+    </nav>
+    <h1 class="h3 mb-3">{% if cliente %}Editar cadastro{% else %}Cadastrar cliente{% endif %}</h1>
+
+    {% if request.GET.depois == "venda" and not cliente %}
+      <div class="alert alert-info small d-flex gap-2">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <div>Depois de salvar, você seguirá direto para o registro da venda.</div>
+      </div>
+    {% endif %}
+
+    <form method="post" class="card cartao" novalidate data-envio-unico>
+      {% csrf_token %}
+      <div class="card-body p-4">
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger" role="alert">{% for erro in form.non_field_errors %}{{ erro }}{% endfor %}</div>
+        {% endif %}
+        {% include "_campo.html" with campo=form.nome %}
+        {% include "_campo.html" with campo=form.telefone %}
+        {% include "_campo.html" with campo=form.observacoes %}
+        <p class="small text-body-secondary mb-4">
+          <i class="bi bi-shield-check me-1" aria-hidden="true"></i>
+          Pedimos apenas o necessário para identificar o cliente (LGPD).
+        </p>
+        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="{% if cliente %}{% url 'caderneta:cliente' cliente.pk %}{% else %}{% url 'caderneta:clientes' %}{% endif %}">Cancelar</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2 me-1" aria-hidden="true"></i>{% if request.GET.depois == "venda" and not cliente %}Salvar e registrar venda{% else %}Salvar{% endif %}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
