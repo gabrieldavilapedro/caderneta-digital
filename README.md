@@ -388,8 +388,3 @@ regra (por exemplo, passar a aceitar crédito), basta alterar essa função.
 9. **Faturas por mês** de cada cliente, com a fatura do mês para imprimir ou mostrar ao cliente.
 10. **Pagamento por fatura**, inteiro ou parcial, com a situação de cada fatura (quitada, paga em parte ou
     em aberto).
-
-> **Atenção ao documento do PI:** a seção 2.2 apresenta "não ter controle de estoque" como diferencial de
-> simplicidade. Com o estoque, o diferencial passa a ser outro: o estoque é **opcional**, e o comerciante
-> que só quer a caderneta continua lançando vendas apenas pelo valor. As seções 2.2, 4, 7 (requisitos
-> RF007–RF012) e 8 (backlog e Kanban) precisam ser atualizadas.
