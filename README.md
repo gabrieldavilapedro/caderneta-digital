@@ -59,30 +59,122 @@ Projeto Integrador II, Análise e Desenvolvimento de Sistemas (UNESC).
 
 ## Como executar
 
-### Pré-requisitos
+### Instalação em um computador novo (passo a passo)
 
-- Python 3.12 ou superior
-- Docker com Docker Compose
-- VS Code (recomendado). Ao abrir a pasta, o VS Code sugere as extensões em `.vscode/extensions.json`.
+Este roteiro parte de um computador sem nada instalado e termina com o sistema aberto no navegador. A primeira
+vez precisa de internet; depois disso, a caderneta funciona sem conexão.
 
-### Iniciar com um clique (recomendado)
+#### Passo 1: instalar os programas
 
-| Sistema | Como iniciar |
+| Programa | Para quê | Onde baixar |
+|---|---|---|
+| **Git** | Baixar (clonar) o código. No Windows, instala também o **Git Bash**. | https://git-scm.com/downloads |
+| **Python 3.12** ou superior | Rodar o sistema. | https://www.python.org/downloads/ |
+| **Docker** | Rodar o banco de dados PostgreSQL. | https://docs.docker.com/get-started/get-docker/ |
+| **VS Code** (opcional) | Ver e editar o código. Ele sugere as extensões de `.vscode/extensions.json`. | https://code.visualstudio.com/ |
+
+**No Windows:**
+
+- **Python:** na primeira tela do instalador, marque **"Add python.exe to PATH"**.
+- **Docker Desktop:** o instalador pode pedir para ativar o WSL 2 e reiniciar o computador
+  ([guia oficial](https://docs.docker.com/desktop/setup/install/windows-install/)). Depois, abra o Docker
+  Desktop e espere ele indicar que está em execução.
+
+**No Linux (Ubuntu/Debian):**
+
+```bash
+sudo apt update
+sudo apt install -y git python3 python3-venv
+```
+
+Para o Docker, siga o [guia oficial de instalação](https://docs.docker.com/engine/install/ubuntu/) e libere o
+uso sem `sudo` ([pós-instalação](https://docs.docker.com/engine/install/linux-postinstall/)):
+
+```bash
+sudo usermod -aG docker $USER      # depois, saia e entre de novo na sessão
+```
+
+Para conferir, abra um terminal e rode os comandos abaixo; cada um deve mostrar um número de versão:
+
+```bash
+git --version
+python3 --version                  # no Windows: py --version
+docker --version
+```
+
+#### Passo 2: baixar o código pelo link do repositório
+
+1. Escolha a pasta onde o projeto vai ficar, por exemplo **Documentos**.
+2. Abra um terminal nessa pasta:
+   - **Windows:** clique com o botão direito dentro da pasta e escolha **Open Git Bash here** (no Windows 11,
+     antes clique em **Mostrar mais opções**).
+   - **Linux:** clique com o botão direito dentro da pasta e escolha **Abrir no terminal**.
+3. Clone o repositório e entre na pasta criada:
+
+   ```bash
+   git clone https://github.com/gabrieldavilapedro/caderneta-digital.git
+   cd caderneta-digital
+   ```
+
+O repositório é público: para baixar **não é preciso conta no GitHub nem chave SSH**. A chave só é necessária
+para enviar alterações (veja [Chave SSH (opcional)](#chave-ssh-opcional)).
+
+> **Sem Git:** na página do repositório, clique em **Code → Download ZIP** e extraia o arquivo. Nesse caso, as
+> atualizações não chegam pelo `git pull`: é preciso baixar o ZIP de novo.
+
+#### Passo 3: iniciar o sistema
+
+Com o Docker em execução:
+
+- **Windows:** abra a pasta `caderneta-digital` e dê dois cliques em **`iniciar.bat`**.
+- **Linux:** no terminal, dentro da pasta, rode `./iniciar.sh`.
+
+Na primeira vez, o script leva alguns minutos:
+
+1. cria o ambiente Python (venv) e instala as dependências;
+2. gera o arquivo `.env` com chave secreta e senha do banco aleatórias;
+3. baixa a imagem do PostgreSQL, sobe o banco no Docker e cria as tabelas;
+4. inicia o sistema e abre o navegador em **http://localhost:8000**.
+
+> Se o Windows mostrar um aviso de segurança ao abrir o `iniciar.bat` (comum quando o projeto foi baixado em
+> ZIP), confirme que deseja executá-lo.
+
+#### Passo 4: usar
+
+O sistema abre direto no painel, **sem login**. Para encerrar, feche a janela do terminal.
+
+Nos próximos dias, basta repetir o passo 3: a abertura leva poucos segundos. Se o sistema já estiver aberto, o
+script só abre o navegador. No Linux, para ter um **ícone no menu de aplicativos** (e na Área de Trabalho),
+rode uma vez `scripts/criar_atalho_linux.sh`.
+
+#### Atualizar para uma versão nova
+
+Dentro da pasta do projeto:
+
+```bash
+git pull
+```
+
+Depois, inicie de novo: o script aplica sozinho as mudanças nas tabelas. Se o arquivo `requirements.txt` tiver
+mudado, atualize as dependências antes:
+
+```bash
+.venv/bin/pip install -r requirements.txt            # Windows: .venv\Scripts\pip install -r requirements.txt
+```
+
+#### Se algo der errado
+
+| Mensagem | O que fazer |
 |---|---|
-| **Linux** | Rode `./iniciar.sh`. Para ter um **ícone no menu de aplicativos** (e na Área de Trabalho), rode uma vez `scripts/criar_atalho_linux.sh`; depois é só clicar em "Caderneta Digital". |
-| **Windows** | Dê dois cliques em **`iniciar.bat`**. |
+| Docker não encontrado | Instale o Docker (passo 1). |
+| O Docker não está em execução | Windows: abra o Docker Desktop. Linux: `sudo systemctl start docker`. Depois, tente de novo. |
+| Não foi possível criar o ambiente virtual / ambiente Python | Linux: `sudo apt install python3-venv`. Windows: reinstale o Python marcando **"Add python.exe to PATH"**. |
+| Não foi possível instalar as dependências | Verifique a conexão com a internet e tente de novo. |
+| A porta 8000 está ocupada por outro programa | Use outra porta. Linux: `PORTA=8080 ./iniciar.sh`. Windows (Prompt de Comando): `set PORTA=8080` e depois `iniciar.bat`. |
 
-O script faz tudo sozinho:
+### Passo a passo manual (para desenvolvimento)
 
-1. **Na primeira vez:** cria o venv, instala as dependências e gera o `.env` com chave secreta e senha do
-   banco aleatórias. Isso precisa de internet.
-2. Sobe o PostgreSQL no Docker e aplica as tabelas que estiverem faltando.
-3. Inicia o sistema e abre o navegador em **http://localhost:8000**.
-
-Se o sistema já estiver aberto, o script só abre o navegador. Para encerrar, basta fechar a janela do
-terminal. O Docker precisa estar instalado e em execução.
-
-### Passo a passo manual (primeira vez)
+Sem o script, os mesmos passos podem ser feitos à mão:
 
 ```bash
 # 1. Criar e ativar o ambiente virtual (venv)
@@ -114,7 +206,7 @@ Acesse **http://localhost:8000**. A tela inicial abre direto, sem login.
 
 ### Uso no dia a dia
 
-Use o **iniciar com um clique** acima, ou, manualmente:
+Use o `iniciar.sh` / `iniciar.bat` (passo 3) ou, manualmente:
 
 ```bash
 docker compose up -d               # o banco reinicia sozinho com o Docker, mas não custa garantir
@@ -128,6 +220,48 @@ dependências e a imagem do PostgreSQL.
 
 Para o uso pelo comerciante, defina `DJANGO_DEBUG=False` no `.env`. Assim, detalhes técnicos de erros não
 aparecem na tela.
+
+### Chave SSH (opcional)
+
+A chave SSH só é necessária para **enviar alterações** ao GitHub (`git push`) sem digitar usuário e token a cada
+vez. Para baixar e usar o sistema, ela não é necessária.
+
+1. Gere a chave (aceite o local sugerido; a senha da chave é opcional):
+
+   ```bash
+   ssh-keygen -t ed25519 -C "seu-email@exemplo.com"
+   ```
+
+2. Mostre a chave **pública** e copie a linha inteira, que começa com `ssh-ed25519`:
+
+   ```bash
+   cat ~/.ssh/id_ed25519.pub            # no Windows, use o Git Bash
+   ```
+
+3. No GitHub, abra **Settings → SSH and GPG keys → New SSH key** (https://github.com/settings/ssh/new), cole a
+   chave e salve.
+4. Teste a conexão. A resposta deve ser `Hi <seu-usuário>! You've successfully authenticated...`:
+
+   ```bash
+   ssh -T git@github.com
+   ```
+
+5. Clone pelo endereço SSH, ou troque o endereço de um clone já feito:
+
+   ```bash
+   git clone git@github.com:gabrieldavilapedro/caderneta-digital.git
+   # ou, num clone feito por HTTPS:
+   git remote set-url origin git@github.com:gabrieldavilapedro/caderneta-digital.git
+   ```
+
+Tutoriais oficiais do GitHub, em português, com o passo a passo para Windows, Linux e macOS:
+
+- [Clonar um repositório](https://docs.github.com/pt/repositories/creating-and-managing-repositories/cloning-a-repository)
+- [Gerar uma nova chave SSH](https://docs.github.com/pt/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+- [Adicionar a chave SSH à sua conta do GitHub](https://docs.github.com/pt/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
+- [Testar a conexão SSH](https://docs.github.com/pt/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection)
+
+> ⚠️ Nunca compartilhe nem envie ao repositório o arquivo da chave **privada** (`id_ed25519`, sem `.pub`).
 
 ## Testes
 
